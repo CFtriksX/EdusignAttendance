@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import aiohttp
-from dotenv import load_dotenv
 import os
 
 class Edusign(ABC):
@@ -25,11 +24,10 @@ class Edusign(ABC):
 
 class EdusignToken(Edusign):
     def __init__(self):
-        load_dotenv()
         self.token = ''
         self.school_id = ''
 
-    async def login(self):
+    async def login(self, school_id):
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 f'{os.getenv("EDUSIGN_URL")}/professor/account/getByCredentials',
@@ -43,7 +41,9 @@ class EdusignToken(Edusign):
                 self.token = obj['result']['TOKEN']
                 if not obj['result'].get('SCHOOL_ID'):
                     raise KeyError('No school id')
-                self.school_id = obj['result']['SCHOOL_ID'][0]
+                if school_id not in obj['result']['SCHOOL_ID']:
+                    return False
+                self.school_id = school_id
                 return True
 
     async def get_sessions(self, start_date, end_date, promo):

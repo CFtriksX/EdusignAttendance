@@ -1,9 +1,12 @@
 from edusign_attendance.Edusign import EdusignToken
 from edusign_attendance.excel_wirtter import create_excel, add_worksheet
+import os
+from dotenv import load_dotenv
+import json
 
-async def log_in():
+async def log_in(school_id):
     edusign = EdusignToken()
-    if not await edusign.login():
+    if not await edusign.login(school_id):
         return False
     return edusign
 
@@ -13,13 +16,15 @@ def create_student_sheet(student, sessions):
         if student_status['state'] == True:
             if student_status.get('delay', False):
                 student.append("Late")
-            student.append("OK")
+            else:
+                student.append("OK")
         elif student_status['signatureEmail'] == None:
             student.append("NOK")
         else:
             if student_status.get('delay', False):
                 student.append("SIGN Late")
-            student.append("SIGN")
+            else:
+                student.append("SIGN")
     return student
 
 def get_name_from_id(students, id):
@@ -55,17 +60,22 @@ async def get_promo_attendance(edusign, start_date, end_date, promo):
         all_sessions.append(await edusign.get_session(session['edusign_id']))
     return create_matrix(all_sessions, students, promo), date_list
 
-async def edusign_attendance(start_date, end_date):
-    key_list = ['LYN202', 'LYN193', 'LYN201', 'LYN169', 'LYN194', 'LYN209', 'LYN210']
-    promo_list = ['MSC1', 'MSC2', 'Pre-msc', 'WAC 2022', 'WAC 2023', 'WAC 2024', 'Coding']
-    edusign = await log_in()
+async def get_school_id_attendance(school_id, workbook, start_date, end_date):
+    key_list = json.loads(os.getenv("KEY_LIST"))
+    promo_list = json.loads(os.getenv("PROMO_LIST"))
+
+    edusign = await log_in(school_id)
     if not edusign:
-        print("Can not log in!\nPlease verify that you have specify the correct credentials in the .env file.")
-        exit(84)
-    workbook = create_excel(f"{start_date}_to_{end_date}.xlsx")
+        return
     for index, element in enumerate(key_list):
         result = await get_promo_attendance(edusign, start_date, end_date, element)
         if result != False:
             add_worksheet(workbook, promo_list[index], result[0], result[1])
-    workbook.close()
 
+async def edusign_attendance(start_date, end_date):
+    load_dotenv()
+    school_id_list = json.loads(os.getenv("SCHOOL_IDS"))
+    workbook = create_excel(f"{start_date}_to_{end_date}.xlsx")
+    for school_id in school_id_list:
+        await get_school_id_attendance(school_id, workbook, start_date, end_date)
+    workbook.close()
