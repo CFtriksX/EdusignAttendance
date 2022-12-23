@@ -60,13 +60,10 @@ async def get_promo_attendance(edusign, start_date, end_date, promo):
         all_sessions.append(await edusign.get_session(session['edusign_id']))
     return create_matrix(all_sessions, students, promo), date_list
 
-async def get_school_id_attendance(school_id, workbook, start_date, end_date):
+async def get_school_id_attendance(edusign, workbook, start_date, end_date):
     key_list = json.loads(os.getenv("KEY_LIST"))
     promo_list = json.loads(os.getenv("PROMO_LIST"))
 
-    edusign = await log_in(school_id)
-    if not edusign:
-        return
     for index, element in enumerate(key_list):
         result = await get_promo_attendance(edusign, start_date, end_date, element)
         if result != False:
@@ -74,8 +71,11 @@ async def get_school_id_attendance(school_id, workbook, start_date, end_date):
 
 async def edusign_attendance(start_date, end_date):
     load_dotenv()
-    school_id_list = json.loads(os.getenv("SCHOOL_IDS"))
     workbook = create_excel(f"{start_date}_to_{end_date}.xlsx")
-    for school_id in school_id_list:
-        await get_school_id_attendance(school_id, workbook, start_date, end_date)
+    edusign = EdusignToken()
+    school_ids = await edusign.login()
+    for school_id, token in list(school_ids.items()):
+        edusign.set_school_id(school_id)
+        edusign.set_token(token)
+        await get_school_id_attendance(edusign, workbook, start_date, end_date)
     workbook.close()
