@@ -18,11 +18,11 @@ def create_student_sheet(student, sessions):
                 student.append("Late")
             else:
                 student.append("OK")
-        elif student_status['signatureEmail'] == None:
+        elif 'signatureEmail' not in student_status:
             student.append("NOK")
         else:
             if student_status.get('delay', False):
-                student.append("SIGN Late")
+                    student.append("SIGN Late")
             else:
                 student.append("SIGN")
     return student
