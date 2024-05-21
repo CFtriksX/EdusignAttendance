@@ -15,10 +15,10 @@ def print_help():
     exit(84)
 
 def verify_argument(start_date, end_date):
-    if not re.search("^\d\d-\d\d-\d\d$", start_date):
+    if not re.search("^\d\d\d\d-\d\d-\d\d$", start_date):
         print_help()
 
-    if not re.search("^\d\d-\d\d-\d\d$", end_date):
+    if not re.search("^\d\d\d\d-\d\d-\d\d$", end_date):
         print_help()
 
 if __name__ == '__main__':
